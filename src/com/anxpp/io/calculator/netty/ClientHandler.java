@@ -9,43 +9,40 @@ import java.io.UnsupportedEncodingException;
 
 public class ClientHandler extends ChannelInboundHandlerAdapter {
 	
-	ChannelHandlerContext ctx;
-	/**
-	 * tcpé“¾è·¯ç®€å†æˆåŠŸåè°ƒç”¨
-	 */
-	@Override
-	public void channelActive(ChannelHandlerContext ctx) throws Exception {
-		this.ctx = ctx;
-		sendMsg("å®¢æˆ·ç«¯æ¶ˆæ¯");
-	}
-	
-	public boolean sendMsg(String msg){
-		System.out.println("å®¢æˆ·ç«¯å‘é€æ¶ˆæ¯ï¼š"+msg);
-		byte[] req = msg.getBytes();
-		ByteBuf m = Unpooled.buffer(req.length);
-		m.writeBytes(req);
-		ctx.writeAndFlush(m);
-		return msg.equals("q")?false:true;
-	}
-	
-	/**
-	 * æ”¶åˆ°æœåŠ¡å™¨æ¶ˆæ¯åè°ƒç”¨
-	 * @throws UnsupportedEncodingException 
-	 */
-    @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) throws UnsupportedEncodingException {
-        ByteBuf buf = (ByteBuf) msg;
-		byte[] req = new byte[buf.readableBytes()];
-		buf.readBytes(req);
-		String body = new String(req,"utf-8");
-		System.out.println("æœåŠ¡å™¨æ¶ˆæ¯ï¼š"+body);
-    }
-    /**
-     * å‘ç”Ÿå¼‚å¸¸æ—¶è°ƒç”¨
-     */
-    @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        cause.printStackTrace();
-        ctx.close();
-    }
+	 ChannelHandlerContext ctx;  
+	    /** 
+	     * tcpÁ´Â·¼òÀú³É¹¦ºóµ÷ÓÃ 
+	     */  
+	    @Override  
+	    public void channelActive(ChannelHandlerContext ctx) throws Exception {  
+	        this.ctx = ctx;  
+	    }  
+	    public boolean sendMsg(String msg){  
+	        System.out.println("¿Í»§¶Ë·¢ËÍÏûÏ¢£º"+msg);  
+	        byte[] req = msg.getBytes();  
+	        ByteBuf m = Unpooled.buffer(req.length);  
+	        m.writeBytes(req);  
+	        ctx.writeAndFlush(m);  
+	        return msg.equals("q")?false:true;  
+	    }  
+	    /** 
+	     * ÊÕµ½·şÎñÆ÷ÏûÏ¢ºóµ÷ÓÃ 
+	     * @throws UnsupportedEncodingException  
+	     */  
+	    @Override  
+	    public void channelRead(ChannelHandlerContext ctx, Object msg) throws UnsupportedEncodingException {  
+	        ByteBuf buf = (ByteBuf) msg;  
+	        byte[] req = new byte[buf.readableBytes()];  
+	        buf.readBytes(req);  
+	        String body = new String(req,"utf-8");  
+	        System.out.println("·şÎñÆ÷ÏûÏ¢£º"+body);  
+	    }  
+	    /** 
+	     * ·¢ÉúÒì³£Ê±µ÷ÓÃ 
+	     */  
+	    @Override  
+	    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {  
+	        cause.printStackTrace();  
+	        ctx.close();  
+	    }  
 }

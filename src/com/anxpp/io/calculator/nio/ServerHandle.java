@@ -11,7 +11,7 @@ import java.util.Set;
 
 import com.anxpp.io.utils.Calculator;
 /**
- * NIO�����
+ * NIO服务端
  * @author yangtao__anxpp.com
  * @version 1.0
  */
@@ -20,24 +20,24 @@ public class ServerHandle implements Runnable{
 	private ServerSocketChannel serverChannel;
 	private volatile boolean started;
 	/**
-	 * ���췽��
-	 * @param port ָ��Ҫ�����Ķ˿ں�
-	 */
+     * 构造方法
+     * @param port 指定要监听的端口号
+     */
 	public ServerHandle(int port) {
 		try{
-			//����ѡ����
+			//创建选择器
 			selector = Selector.open();
-			//�򿪼���ͨ��
+			//打开监听通道
 			serverChannel = ServerSocketChannel.open();
-			//���Ϊ true�����ͨ��������������ģʽ�����Ϊ false�����ͨ���������ڷ�����ģʽ
-			serverChannel.configureBlocking(false);//����������ģʽ
-			//�󶨶˿� backlog��Ϊ1024
+			//如果为 true，则此通道将被置于阻塞模式；如果为 false，则此通道将被置于非阻塞模式
+			serverChannel.configureBlocking(false);//锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷模式
+			//绑定端口 backlog设为1024
 			serverChannel.socket().bind(new InetSocketAddress(port),1024);
-			//�����ͻ�����������
+			//监听客户端连接请求
 			serverChannel.register(selector, SelectionKey.OP_ACCEPT);
-			//��Ƿ������ѿ���
+			//标记服务器已开启
 			started = true;
-			System.out.println("���������������˿ںţ�" + port);
+			System.out.println("服务器已启动，端口号：" + port);
 		}catch(IOException e){
 			e.printStackTrace();
 			System.exit(1);
@@ -48,12 +48,12 @@ public class ServerHandle implements Runnable{
 	}
 	@Override
 	public void run() {
-		//ѭ������selector
+		//循环遍历selector
 		while(started){
 			try{
-				//�����Ƿ��ж�д�¼�������selectorÿ��1s������һ��
+				//无论是否有读写事件发生，selector每隔1s被唤醒一次
 				selector.select(1000);
-				//����,ֻ�е�����һ��ע����¼�������ʱ��Ż����.
+				//阻塞,只有当至少一个注册的事件发生的时候才会继续.
 //				selector.select();
 				Set<SelectionKey> keys = selector.selectedKeys();
 				Iterator<SelectionKey> it = keys.iterator();
@@ -76,7 +76,7 @@ public class ServerHandle implements Runnable{
 				t.printStackTrace();
 			}
 		}
-		//selector�رպ���Զ��ͷ�����������Դ
+		//selector关闭后会自动释放里面管理的资源
 		if(selector != null)
 			try{
 				selector.close();
@@ -86,47 +86,47 @@ public class ServerHandle implements Runnable{
 	}
 	private void handleInput(SelectionKey key) throws IOException{
 		if(key.isValid()){
-			//�����½����������Ϣ
+			//处理新接入的请求消息
 			if(key.isAcceptable()){
 				ServerSocketChannel ssc = (ServerSocketChannel) key.channel();
-				//ͨ��ServerSocketChannel��accept����SocketChannelʵ��
-				//��ɸò�����ζ�����TCP�������֣�TCP������·��ʽ����
+				//通过ServerSocketChannel的accept创建SocketChannel实例
+                //完成该操作意味着完成TCP三次握手，TCP物理链路正式建立
 				SocketChannel sc = ssc.accept();
-				//����Ϊ��������
+				//设置为非阻塞的
 				sc.configureBlocking(false);
-				//ע��Ϊ��
+				//注册为读
 				sc.register(selector, SelectionKey.OP_READ);
 			}
-			//����Ϣ
+			//读消息
 			if(key.isReadable()){
 				SocketChannel sc = (SocketChannel) key.channel();
-				//����ByteBuffer��������һ��1M�Ļ�����
+				//创建ByteBuffer，并开辟一个1M的缓冲区
 				ByteBuffer buffer = ByteBuffer.allocate(1024);
-				//��ȡ�������������ض�ȡ�����ֽ���
+				//读取请求码流，返回读取到的字节数
 				int readBytes = sc.read(buffer);
-				//��ȡ���ֽڣ����ֽڽ��б����
+				//读取到字节，对字节进行编解码
 				if(readBytes>0){
-					//����������ǰ��limit����Ϊposition=0�����ں����Ի������Ķ�ȡ����
+					//将缓冲区当前的limit设置为position=0，用于后续对缓冲区的读取操作
 					buffer.flip();
-					//���ݻ������ɶ��ֽ��������ֽ�����
+					//根据缓冲区可读字节数创建字节数组
 					byte[] bytes = new byte[buffer.remaining()];
-					//���������ɶ��ֽ����鸴�Ƶ��½���������
+					//将缓冲区可读字节数组复制到新建的数组中
 					buffer.get(bytes);
 					String expression = new String(bytes,"UTF-8");
-					System.out.println("�������յ���Ϣ��" + expression);
-					//��������
+					System.out.println("服务器收到消息：" + expression);
+					//处理数据
 					String result = null;
 					try{
 						result = Calculator.Instance.cal(expression).toString();
 					}catch(Exception e){
-						result = "�������" + e.getMessage();
+						result = "计算错误：" + e.getMessage();
 					}
-					//����Ӧ����Ϣ
+					//发送应答消息
 					doWrite(sc,result);
 				}
-				//û�ж�ȡ���ֽ� ����
+				//没有读取到字节 忽略
 //				else if(readBytes==0);
-				//��·�Ѿ��رգ��ͷ���Դ
+				//链路已经关闭，释放资源
 				else if(readBytes<0){
 					key.cancel();
 					sc.close();
@@ -134,18 +134,18 @@ public class ServerHandle implements Runnable{
 			}
 		}
 	}
-	//�첽����Ӧ����Ϣ
+	//异步发送应答消息
 	private void doWrite(SocketChannel channel,String response) throws IOException{
-		//����Ϣ����Ϊ�ֽ�����
+		//将消息编码为字节数组
 		byte[] bytes = response.getBytes();
-		//����������������ByteBuffer
-		ByteBuffer writeBuffer = ByteBuffer.allocate(bytes.length);
-		//���ֽ����鸴�Ƶ�������
-		writeBuffer.put(bytes);
-		//flip����
-		writeBuffer.flip();
-		//���ͻ��������ֽ�����
-		channel.write(writeBuffer);
-		//****�˴���������д������Ĵ���
+        //根据数组容量创建ByteBuffer
+        ByteBuffer writeBuffer = ByteBuffer.allocate(bytes.length);
+        //将字节数组复制到缓冲区
+        writeBuffer.put(bytes);
+        //flip操作
+        writeBuffer.flip();
+        //发送缓冲区的字节数组
+        channel.write(writeBuffer);
+        //****此处不含处理“写半包”的代码
 	}
 }
