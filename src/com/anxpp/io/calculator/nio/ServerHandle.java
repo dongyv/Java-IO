@@ -30,7 +30,7 @@ public class ServerHandle implements Runnable{
 			//打开监听通道
 			serverChannel = ServerSocketChannel.open();
 			//如果为 true，则此通道将被置于阻塞模式；如果为 false，则此通道将被置于非阻塞模式
-			serverChannel.configureBlocking(false);//锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷模式
+			serverChannel.configureBlocking(false);//开启非阻塞模式
 			//绑定端口 backlog设为1024
 			serverChannel.socket().bind(new InetSocketAddress(port),1024);
 			//监听客户端连接请求
